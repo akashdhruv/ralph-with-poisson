@@ -30,6 +30,10 @@ while true; do
 done
 ```
 
+## References
+
+- [Ralph Wiggum as a "software engineer"](https://ghuntley.com/ralph) — The original blog post explaining the Ralph technique
+
 ## License
 
 MIT — see `LICENSE`.
