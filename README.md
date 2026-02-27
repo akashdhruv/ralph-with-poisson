@@ -1,13 +1,35 @@
-## Exploding context window, running ralph loop from withing a coding agent (inside harness)
+## Run
+
+One-shot:
 
 ```
-cat spec.md | opencode --agent build run "/ralph-loop"
+cat prompt.md | opencode --agent build run
 ```
 
-## Manageable context window, running ralph loop outside the coding agent (external harness)
+Loop (external harness):
+
+```
+./ralph-loop.sh
+```
+
+Stop with Ctrl+C.
+
+## Notes
+
+### Exploding context window (inside harness)
+
+```
+cat prompt.md | opencode --agent build run "/ralph-loop"
+```
+
+### Manageable context window (external harness)
 
 ```
 while true; do
-    cat spec.md | opencode --agent build run
-end do
+    cat prompt.md | opencode --agent build run
+done
 ```
+
+## License
+
+MIT — see `LICENSE`.
