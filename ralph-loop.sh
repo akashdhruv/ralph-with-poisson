@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 while true; do
-    cat prompt.md | opencode --agent build run
+    pi @prompt.md -p --model claudeopus46
+    #cat prompt.md | opencode --agent build run
     #sleep 60
 done

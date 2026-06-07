@@ -12,7 +12,7 @@ with Dirichlet boundary conditions φ = 0 on ∂Ω (default), or Neumann where s
 
 ## Module Layout
 
-All code lives under `generated-src/`:
+IMPORTANT: All code lives under `generated-src/`:
 
 ```
 generated-src/
