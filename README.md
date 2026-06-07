@@ -22,7 +22,7 @@ Stop with Ctrl+C.
 cat prompt.md | opencode --agent build run "/ralph-loop"
 ```
 
-### Manageable context window (external harness)
+### Manageable context window (outside harness)
 
 ```
 while true; do
