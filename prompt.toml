@@ -1,1 +1,8 @@
+[tools]
+bash=["python3.8"]
+
+[[chat.user]]
+content = '''
 study poisson-implementation-plan.md and pick the single most important thing to do.
+
+'''
