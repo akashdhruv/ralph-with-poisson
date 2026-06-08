@@ -1,34 +1,37 @@
-## Run
+## Experiment: Ralph-style loop harness + CodeScribe loop mode
 
-One-shot:
+This repo is an experiment in running repeated “fresh session” coding-agent iterations over a single task prompt.
 
+Key files:
+
+- `prompt.toml` — the task file used by CodeScribe loop mode
+- `ralph-loop.sh` — a small external harness for testing different coding agents (e.g. opencode, Pi, etc.) and for CodeScribe-specific special tests
+
+## Run with CodeScribe (recommended)
+
+Install and configure **CodeScribe** first. See:
+
+- https://github.com/Lab-Notebooks/CodeScribe
+
+Then, from this repo root, run the bounded fresh-session loop:
+
+```bash
+code-scribe loop prompt.toml -m oaic-gpt54 -v
 ```
-cat prompt.md | opencode --agent build run
-```
 
-Loop (external harness):
+- Stop with `Ctrl+C`.
+- Loop artifacts (status + report) are written under:
+  - `.codescribe/loop/`
 
-```
+## Run via the generic loop harness (multi-agent testing)
+
+Use `ralph-loop.sh` when you want to test the same loop idea with other coding-agent frontends (opencode, Pi, etc.), or when you’re doing special-case CodeScribe testing:
+
+```bash
 ./ralph-loop.sh
 ```
 
-Stop with Ctrl+C.
-
-## Notes
-
-### Exploding context window (inside harness)
-
-```
-cat prompt.md | opencode --agent build run "/ralph-loop"
-```
-
-### Manageable context window (outside harness)
-
-```
-while true; do
-    cat prompt.md | opencode --agent build run
-done
-```
+Stop with `Ctrl+C`.
 
 ## References
 
