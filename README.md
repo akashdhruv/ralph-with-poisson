@@ -16,12 +16,14 @@ Install and configure **CodeScribe** first. See:
 Then, from this repo root, run the bounded fresh-session loop:
 
 ```bash
-code-scribe loop prompt.toml -m oaic-gpt54 -v
+code-scribe loop prompt.toml -m oaic-gpt54 -v -niter 30 -nloop 20
 ```
 
-- Stop with `Ctrl+C`.
-- Loop artifacts (status + report) are written under:
-  - `.codescribe/loop/`
+- `-niter` — max iterations per loop session
+- `-nloop` — max number of loop sessions
+- Stop early with `Ctrl+C`.
+- Each loop is split into an **execution** phase (agent writes code) and a **review** phase (agent records progress).
+- Loop artifacts (status + report) are written under `.codescribe/loop/`.
 
 ## Run via the generic loop harness (multi-agent testing)
 
@@ -35,7 +37,7 @@ Stop with `Ctrl+C`.
 
 ## References
 
-- [Ralph Wiggum as a "software engineer"](https://ghuntley.com/ralph) — The original blog post explaining the Ralph technique
+- [Ralph Wiggum as a “software engineer”](https://ghuntley.com/ralph) — The original blog post explaining the Ralph technique
 
 ## License
 
