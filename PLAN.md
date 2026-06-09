@@ -1,0 +1,25 @@
+# Poisson Solver — Implementation Plan
+
+Technical details are in the specification embedded in `specification.toml`.
+
+## Tasks
+
+- [ ] Stand up `Grid` class with numpy arrays for φ and f
+- [ ] Jacobi iterative solver with convergence check
+- [ ] Conjugate gradient solver, numpy only
+- [ ] Manufactured solution test: verify L2 error < 1e-4 on 32×32 grid
+- [ ] Direct solver via `scipy.sparse.linalg.spsolve`
+- [ ] Neumann boundary condition support
+- [ ] `demo.py`: convergence plot — log residual vs iteration for Jacobi and CG
+- [ ] Performance benchmark: compare wall-clock time of all three solvers on 64×64 and 128×128 grids
+
+
+## Process Rule
+
+When you complete a task, mark it done (change `[ ]` to `[x]`) and add a one-line note describing what was built.
+
+## Completion Condition
+
+The loop is done when all tasks above are marked `[x]` and all tests pass.
+
+## Notes

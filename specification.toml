@@ -82,7 +82,9 @@ before each residual evaluation.
 
 Check that each solver achieves L2 error < 1e-4 on a 32×32 grid.
 
-Study `poisson-implementation-plan.md` and the specification above, then pick the single most
-important thing to implement first and implement it.
+Study `PLAN.md` and the specification above, then pick the single most
+important thing to implement first and implement it. After implementing, check
+`PLAN.md` for any remaining `[ ]` tasks and explicitly list them so the
+next iteration knows what work remains.
 
 '''
