@@ -15,39 +15,47 @@ See the [CodeScribe README](https://github.com/Lab-Notebooks/CodeScribe) for ins
 
 **2. Run the bounded fresh-session loop**
 
-From this repo root:
+Set your API key and run from this repo root:
 
 ```bash
-code-scribe loop specification.toml -m oaic-gpt54 -v -niter 30 -nloop 20
+export ANTHROPIC_API_KEY="sk-ant-..."
+code-scribe loop specification.toml -m anthropic-claude-opus-4-6 -v -niter 30 -nloop 20 --reason
 ```
 
 - `-niter` — max iterations per loop session
 - `-nloop` — max number of loop sessions
+- `--reason` — enable adaptive thinking (Anthropic models only)
 - Stop early with `Ctrl+C`.
 
-Sample output:
+Sample output (truncated):
 
 ```
 ▶  loop 1 [execution]
   iter 1
     │ Let me start by reading the task file and understanding the current state of the project.
-    usage  in 2,517  out 162  total 2,679
+    usage  in 2,517  out 158  total 2,675
     ▸ read   specification.toml
-    ▸ bash   find . -type f -not -path './.git/*' ...   exit_code=0
+    ▸ bash   find . -type f -not -path './.git/*' 2>/dev/null              Error: blocked shell syntax detected
   iter 2
-    usage  in 4,481  out 69  total 4,550
-    ▸ read   PLAN.md
+    usage  in 4,093  out 64  total 4,157
+    ▸ bash   find . -type f -not -path "./.git/*"                          bash exit_code=0
   iter 3
-    │ Now I understand the current state. The most important first step is to create the
-    │ project structure and implement the Grid class, as everything else depends on it.
-    usage  in 5,030  out 709  total 5,739
+    usage  in 4,598  out 54  total 4,652
+    ▸ read   PLAN.md
+  iter 4
+    │ Now I have a clear picture. This is the first loop and nothing has been implemented yet.
+    │ I'll start by building out the core components: the Grid class to handle the discretization,
+    │ all three solver implementations, and the test suite to validate them.
+    usage  in 5,147  out 4,009  total 9,156
     ▸ write  generated-src/poisson/__init__.py
     ▸ write  generated-src/poisson/grid.py
     ▸ write  generated-src/poisson/solvers.py
-  iter 4
-    usage  in 9,675  out 1,222  total 10,897
+  iter 5
+    usage  in 9,292  out 1,767  total 11,059
     ▸ write  generated-src/tests/__init__.py
     ▸ write  generated-src/tests/test_poisson.py
+    ▸ write  generated-src/poisson/demo.py
+  ...
 ```
 
 **3. How it works**
