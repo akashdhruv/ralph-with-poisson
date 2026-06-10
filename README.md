@@ -78,7 +78,7 @@ Stop with `Ctrl+C`.
 
 ## Running the generated code
 
-The completed solution lives under `archive/run-2026-06-09/generated-src/`.
+A completed solution lives under `archive/run-2026-06-09/generated-src/`.
 
 **Run the demo** (convergence plot + benchmark) from inside `generated-src/`:
 
