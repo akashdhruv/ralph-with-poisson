@@ -68,7 +68,7 @@ Each loop session opens a fresh agent context with `specification.toml` as the p
 
 ## Run via the generic loop harness (multi-agent testing)
 
-Use `ralph-loop.sh` when you want to test the same loop idea with other coding-agent frontends (opencode, Pi, etc.), or when you’re doing special-case CodeScribe testing:
+Use `ralph-loop.sh` when you want to test the same loop idea with other coding-agent frontends (opencode, Pi, etc.):
 
 ```bash
 ./ralph-loop.sh
