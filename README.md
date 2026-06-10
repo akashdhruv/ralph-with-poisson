@@ -76,6 +76,42 @@ Use `ralph-loop.sh` when you want to test the same loop idea with other coding-a
 
 Stop with `Ctrl+C`.
 
+## Running the generated code
+
+The completed solution lives under `archive/run-2026-06-09/generated-src/`.
+
+**Run the demo** (convergence plot + benchmark) from inside `generated-src/`:
+
+```bash
+cd archive/run-2026-06-09/generated-src
+python3.8 -m poisson.demo
+```
+
+Prints residual-vs-iteration for the Jacobi and CG solvers, then a wall-clock benchmark comparing all three solvers on 64×64 and 128×128 grids.
+
+**Run the tests** from the archive run root:
+
+```bash
+cd archive/run-2026-06-09
+python3.8 -m pytest generated-src/tests/test_poisson.py -v
+```
+
+The test suite uses a manufactured solution on a 64×64 grid and asserts L2 error < 1e-4 for each solver.
+
+## Loop logs (`.codescribe/loop/`)
+
+Each run archives its state in `.codescribe/loop/`. The files produced per run are:
+
+| File | Contents |
+|------|----------|
+| `run.toml` | Run-level metadata — `run_id`, `created_at`, `model`, `agent_loops`, `agent_iterations` |
+| `state.toml` | Live loop state — `loop_index`, current `phase` (`execution` or `review`), `updated_at` |
+| `execution.toml` | Full event log: one `[[event]]` block per agent action (`run_start`, `iteration_start`, `model_response`, `tool_call`, `tool_result`, `run_end`), with token usage and timing per iteration |
+| `review.toml` | Review-phase configuration passed to the reviewer agent |
+| `review_output.toml` | Per-loop review summary — `loop` index, `summary` (what was built or cleaned up), `blocker` (empty string when unblocked) |
+
+`execution.toml` is the most detailed: each `model_response` event includes `duration_ms`, `text_chars`, `tool_calls`, and a `usage` JSON blob with input/output/cache token counts. `model_text` records the agent's planning narrative verbatim.
+
 ## References
 
 - [Ralph Wiggum as a “software engineer”](https://ghuntley.com/ralph) — The original blog post explaining the Ralph technique
