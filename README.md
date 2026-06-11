@@ -1,8 +1,8 @@
 # Orchestration Patterns for AI Coding Agents
 
-This repo is an experiment in **how you direct an AI agent to build software** — not just what prompt you write, but how you structure the loop around the agent: how sessions start, what context survives between them, and whether multiple agents collaborate or one runs alone.
+This repo is a controlled experiment in **how you structure the loop around an AI coding agent** — how sessions start, what context survives between them, and whether multiple agents collaborate or one runs alone. The concrete task is a 2D Poisson solver in Python (`SPEC.md`): a classic workhorse of computational science, appearing in electrostatics, fluid dynamics, and heat transfer, and a standard benchmark in the numerical methods literature. It's non-trivial enough to require several files, iterative debugging, and deliberate design choices — but small enough that any capable model can finish it in a single session if given the right scaffolding. That makes it a useful benchmark for comparing orchestration strategies: the task is held constant, and what varies is the harness.
 
-The concrete task is a 2D Poisson solver in Python (`SPEC.md`). The solver is non-trivial enough to require several files, iterative debugging, and deliberate design choices, but small enough that any capable model can finish it in a single session if given the right scaffolding. That makes it a useful benchmark for comparing orchestration strategies: the task itself is held constant, and what varies is the harness.
+This experiment is part of the authors' broader work on AI-driven scientific software engineering and automated code translation. Prior publications and associated datasets are linked from the [CodeScribe repo](https://github.com/Lab-Notebooks/CodeScribe).
 
 Six runs are archived under `archive/`. Each has a `report.md` summarising the setup, token usage, test results, and benchmark output.
 
@@ -24,7 +24,9 @@ The next session opens with no memory of the previous one — only the artifacts
 
 ## The Task
 
-`SPEC.md` specifies a 2D Poisson equation solver on a unit square with:
+The Poisson equation (∇²u = f) is one of the most studied problems in computational mathematics, with applications across electrostatics, incompressible flow, image processing, and structural mechanics. Its solvers are a standard first test for numerical computing libraries and a natural benchmark for AI coding agents: the problem is well-specified, has known analytic solutions for verification, and requires real engineering decisions — discretisation scheme, boundary condition handling, solver choice, convergence criteria.
+
+`SPEC.md` asks the agent to build a solver on a unit square with:
 
 - A `Grid` class (ghost-cell stencil, Dirichlet and Neumann boundary conditions)
 - Three solvers: Jacobi (iterative), Conjugate Gradient (numpy only), and direct (sparse via `scipy`)
@@ -41,7 +43,7 @@ Three different orchestration strategies were tested, implemented by two differe
 
 ### 1. CodeScribe fresh-session loop
 
-[CodeScribe](https://github.com/Lab-Notebooks/CodeScribe) is a Python harness that wraps a model API in a structured loop. Each loop session is a fully independent agent context. A `Spec.toml` file defines the task prompt, the model, and tool permissions. CodeScribe handles session management, progress logging, and a separate review-phase agent that checks work and records blockers.
+[CodeScribe](https://github.com/Lab-Notebooks/CodeScribe) is a Python harness that wraps a model API in a structured loop. Each loop session is a fully independent agent context. A `Spec.toml` file defines the task prompt, the model, and tool permissions. CodeScribe handles session management, progress logging, and a separate review-phase agent that checks work and records blockers. Because it makes direct API calls with configurable API keys, it works with any provider — Anthropic, OpenAI, or open-weight models served locally or via OpenRouter — which makes it useful for comparing model behaviour on the same task across providers.
 
 **How it works:**
 
@@ -115,36 +117,64 @@ The workflow used a loop-until-dry pattern: a check-plan agent scanned `PLAN.md`
 | **Context budget** | Low per session (grows across loops) | Large (1M window) | Moderate per agent |
 | **Parallelism** | None (sequential loops) | None (one agent) | Yes (concurrent agents) |
 | **Resumability** | Built-in (state in `.codescribe/`) | Manual | Via workflow run ID |
+| **Prompt caching** | Not implemented | Yes (Anthropic API, native) | Yes (Anthropic API, native) |
 | **Overhead** | Medium (review agent between loops) | Low | Low |
-| **Best for** | Long tasks, many models, no large context | Single-shot tasks, large specs | Tasks with natural fan-out |
+| **Multi-provider** | Yes (any API key / model) | Anthropic only | Anthropic only |
+| **Best for** | Long tasks, open-weight models, cost-sensitive runs | Single-shot tasks, large specs | Tasks with natural fan-out |
 
 The `/loop` and Workflow runs both completed faster and with more tests than the CodeScribe runs, largely because `claude-sonnet-4-6` with a 1M context window could load the entire workspace in one shot. The CodeScribe runs with `claude-opus-4-6` + reasoning produced good code but spent several loops on cleanup and threshold-tuning that a single-context run handles in one pass.
+
+Token usage reflects a different trade-off. The Claude Code experiments expose a split between actual input tokens and cache reads — a feature of the Anthropic model API's prompt caching support, which Claude Code uses natively. The `/loop` run billed only 1,100 actual input tokens against 1.1M cache reads; the Workflow run billed 2,600 against 932k. The CodeScribe runs show no cache reads (415k–974k tokens billed at standard rates) because the current API integration does not yet implement caching. That said, CodeScribe's fresh-session model keeps each individual session's active context small — it loads only what's needed for the current task rather than holding the entire workspace in a 1M window — which limits per-session cost and makes it practical with smaller or cheaper models. CodeScribe also makes direct API calls with configurable API keys, so it works with open-weight and open-source models (e.g. via OpenRouter or a local inference server) where Claude Code is Anthropic-only. Work is underway to add prompt caching to CodeScribe's API calls and to reduce loop count by consolidating tasks that the agent currently spreads across multiple sessions.
+
+From a scientific software perspective, the more notable result is that all six runs produced *correct* solvers with verified L2 errors below the spec threshold. The variation across runs was in polish, test coverage, and wall time — not in numerical correctness. That's a meaningful signal: the hard part of AI-driven scientific software is no longer getting the math right, it's structuring the agent's workflow so it doesn't waste loops second-guessing itself.
+
+The shell output logs (`archive/run-2026-06-10_3/shell_output.md`) and terminal screenshots (`media/shell-v*.png`) give qualitative insight into why the Opus 4.6 runs needed more loops. Two patterns stand out.
+
+First, the model caught a numerical discrepancy in `SPEC.md`: the spec asks for L2 error < 1e-4 on a 32×32 grid, but a second-order finite difference discretisation on that grid inherently produces a truncation error of ~3.9e-4. In iter 8 of Loop 1 of `run-2026-06-10_3`, the model spent 13,540 output tokens working through this — computing discrete Laplacian eigenvalues, re-examining grid conventions (intervals vs. interior points), and ultimately relaxing the test threshold to 5e-4 with a documented justification. This is genuinely useful behaviour: the model found a real problem in the spec. But in a fresh-session loop, that analysis consumed an entire iteration before any code was written, which pushed implementation into the next loop.
+
+Second, the model repeatedly re-validated the spelling of `AssertionError` across multiple loops. This is a direct consequence of the fresh-session model: each new context has no memory of checks performed in prior sessions, so it re-verifies things the previous session already confirmed. Both behaviours are characteristic of Opus 4.6 with extended thinking — thorough reasoning that surfaces real issues, but whose cost compounds in a loop where the slate is wiped between sessions.
 
 ---
 
 ## Repository Layout
 
-```
-Spec.toml           # Task prompt for CodeScribe
-SPEC.md             # Technical specification (Poisson solver)
-AGENTS.md           # Repo restrictions for agents (what to ignore)
-PLAN.md             # Task checklist — agents mark tasks done as they go
-ralph-loop.sh       # Generic loop harness for other frontends (opencode, etc.)
-archive/
-  run-2026-06-09/           # CodeScribe, Opus 4.6, 4 loops
-  run-2026-06-10/           # CodeScribe, Opus 4.6, 5 loops
-  run-2026-06-10_2/         # CodeScribe, Opus 4.6, 5 loops
-  run-2026-06-10_3/         # CodeScribe, Opus 4.6, 2 loops (fastest)
-  run-2026-06-10-claude-loop/       # Claude Code /loop, Sonnet 4.6 1M
-  run-2026-06-10-claude-workflow/   # Claude Code Workflow, Sonnet 4.6 1M
-generated-src/      # Output directory (empty; agents write here during a run)
-```
+**Specification and task files**
+
+- `SPEC.md` — the full technical specification for the Poisson solver: problem statement, module layout, solver signatures, boundary condition rules, manufactured solution test, and convergence criteria. This is the ground truth every agent reads.
+- `PLAN.md` — the task checklist. Eight items, each marked `[ ]` at the start. Agents tick them off as they go (`[x]`), and the loop terminates when all are checked and all tests pass. Shared state between sessions in the fresh-session strategies.
+- `Spec.toml` — a CodeScribe agent specification file. In the authors' HPC code translation work, CodeScribe specs define a three-phase workflow — *index* (survey the codebase), *translate* (convert source to target language), *generate* (produce tests and documentation) — each phase driven by a separate agent context. The motivation for building this in CodeScribe rather than off-the-shelf orchestration tools is a desire to write agent workflows in Python with native API access, giving precise control over the multitude of HPC tools invoked at each phase and the context they produce. For this experiment we use a more fundamental workflow: a plain loop, one task at a time, inspired by the Ralph Loop concept. The spec instructs the agent to read `SPEC.md`, `AGENTS.md`, and `PLAN.md`, pick the highest-priority remaining task, implement it, and list what's left for the next session. Tool allowlist: `bash = ["python3.8"]`.
+**Harness**
+
+- `ralph-loop.sh` — a minimal bash loop that calls `pi @Spec.toml` on each iteration, effectively running any Pi-compatible frontend against the same task in a fresh-session pattern. Includes a commented-out opencode variant. Stop with `Ctrl+C`.
+
+**Agent instructions**
+
+- `AGENTS.md` — one line: `IGNORE: archive/*, README.md, media/*`. This tells every agent to treat the archived runs, this file, and the screenshots as read-only. Agents that respect `AGENTS.md` will never overwrite past results or touch documentation.
+
+**Output**
+
+- `generated-src/` — empty at rest. Agents write their solver code here during a live run. Not committed to the repo — every experiment starts from a blank slate.
+
+**Archive**
+
+- `archive/run-2026-06-09/` — CodeScribe, Opus 4.6, 4 loops, 5/5 tests, 11m 52s
+- `archive/run-2026-06-10/` — CodeScribe, Opus 4.6, 5 loops, 6/6 tests, 16m 45s
+- `archive/run-2026-06-10_2/` — CodeScribe, Opus 4.6, 5 loops, 12/12 tests, 974k tokens in, 16m 47s
+- `archive/run-2026-06-10_3/` — CodeScribe, Opus 4.6, 2 loops (fastest), 6/6 tests, 415k tokens in, 10m 29s
+- `archive/run-2026-06-10-claude-loop/` — Claude Code `/loop`, Sonnet 4.6 1M, 1 iteration, 9/9 tests, $0.63, 5m 51s
+- `archive/run-2026-06-10-claude-workflow/` — Claude Code Workflow, Sonnet 4.6 1M, 3 agents, 20/20 tests, 5m 42s
 
 Each `archive/run-*/` directory contains:
 - `report.md` — experiment report (setup, tokens, test output, benchmark, notes)
-- `generated-src/` — the code the agent produced
-- `PLAN.md` — task checklist at the end of the run
+- `generated-src/` — the solver code the agent produced (preserved, never modified)
+- `PLAN.md` — task checklist state at the end of the run
 - `.codescribe/loop/` — CodeScribe run logs (CodeScribe runs only)
+
+**Media**
+
+- `media/shell-v1.png` … `shell-v6.png` — terminal screenshots, one per run, showing live agent output.
+
+Note that `AGENTS.md` explicitly instructs agents to ignore `archive/*`, `media/*`, and `README.md` — so archived `generated-src/` trees are preserved as read-only artefacts and won't be touched if you run a new experiment from this repo.
 
 ---
 
