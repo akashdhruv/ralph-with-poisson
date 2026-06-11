@@ -6,6 +6,7 @@
 |-------|-------|
 | Date | 2026-06-10 |
 | Model | claude-sonnet-4-6 (1M context) |
+| Prompt | `/loop Spec.toml` |
 | Harness | Claude Code `/loop` skill with `Spec.toml` |
 | Mode | Self-paced (dynamic, no fixed interval) |
 | Iterations | 1 |

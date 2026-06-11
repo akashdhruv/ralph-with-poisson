@@ -1,6 +1,6 @@
 # Poisson Solver — Implementation Plan
 
-Technical details are in the specification embedded in `specification.toml`.
+Technical details are in the specification embedded in `SPEC.md`.
 
 ## Tasks
 
