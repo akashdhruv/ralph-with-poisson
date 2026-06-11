@@ -1,0 +1,1 @@
+- IGNORE: archive/, README.md, media/
