@@ -1,6 +1,6 @@
 # Orchestration Patterns for AI Coding Agents
 
-This repo is a controlled experiment in **how you structure the loop around an AI coding agent** — how sessions start, what context survives between them, and whether multiple agents collaborate or one runs alone. The concrete task is a 2D Poisson solver in Python (`SPEC.md`): a classic workhorse of computational science, appearing in electrostatics, fluid dynamics, and heat transfer, and a standard benchmark in the numerical methods literature. It's non-trivial enough to require several files, iterative debugging, and deliberate design choices — but small enough that any capable model can finish it in a single session if given the right scaffolding. That makes it a useful benchmark for comparing orchestration strategies: the task is held constant, and what varies is the harness.
+This repo is a controlled experiment in **how you structure the loop around an AI coding agent** — how sessions start, what context survives between them, and whether multiple agents should collaborate or one should run alone. The concrete task is a 2D Poisson solver in Python (`SPEC.md`): a classic workhorse of computational science, appearing in electrostatics, fluid dynamics, and heat transfer, and a standard benchmark in the numerical methods literature. It's non-trivial enough to require several files, iterative debugging, and deliberate design choices — but small enough that any capable model can finish it in a single session if given the right scaffolding. That makes it a useful benchmark for comparing orchestration strategies: the task is held constant, and what varies is the harness.
 
 This experiment is part of the authors' broader work on AI-driven scientific software engineering and automated code translation. Prior publications and associated datasets are linked from the [CodeScribe repo](https://github.com/Lab-Notebooks/CodeScribe).
 
@@ -184,7 +184,8 @@ Note that `AGENTS.md` explicitly instructs agents to ignore `archive/*`, `media/
 
 **1. Install CodeScribe**
 
-See the [CodeScribe README](https://github.com/Lab-Notebooks/CodeScribe) for installation and setup.
+See the [CodeScribe README](https://github.com/Lab-Notebooks/CodeScribe/tree/b9272c16c34111c98332a967b9be7ea3e3cdb8b8) for installation and setup.
+
 
 **2. Run the fresh-session loop**
 
