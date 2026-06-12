@@ -43,7 +43,7 @@ Three different orchestration strategies were tested, implemented by two differe
 
 ### 1. CodeScribe fresh-session loop
 
-[CodeScribe](https://github.com/Lab-Notebooks/CodeScribe) is a Python harness that wraps a model API in a structured loop. Each loop session is a fully independent agent context. A `Spec.toml` file defines the task prompt, the model, and tool permissions. CodeScribe handles session management, progress logging, and a separate review-phase agent that checks work and records blockers. Because it makes direct API calls with configurable API keys, it works with any provider — Anthropic, OpenAI, or open-weight models served locally or via OpenRouter — which makes it useful for comparing model behaviour on the same task across providers.
+[CodeScribe](https://github.com/Lab-Notebooks/CodeScribe) is a Python harness that wraps a model API in a structured loop. Each loop session is a fully independent agent context. A `Spec.toml` file defines the task prompt and tool permissions. CodeScribe handles session management, progress logging, and a separate review-phase agent that checks work and records blockers. Because it makes direct API calls with configurable API keys, it works with any provider — Anthropic, OpenAI, or open-weight and open-source models — which makes it useful for comparing model behaviour on the same task across providers.
 
 **How it works:**
 
