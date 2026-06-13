@@ -318,4 +318,4 @@ Each CodeScribe run archives its state in `.codescribe/loop/`. The files produce
 
 ## License
 
-MIT — see `LICENSE`.
+CC BY 4.0 — see `LICENSE`.
