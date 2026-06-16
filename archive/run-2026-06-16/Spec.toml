@@ -1,0 +1,13 @@
+[tools]
+bash=["python3.8","rm","mkdir"]
+
+[[chat.user]]
+content = '''
+Read `SPEC.md` for the full technical specification.
+Read `AGENTS.md` for repo restrictions.
+
+Study `PLAN.md`, then pick the single most important thing to implement first and implement it.
+After implementing, check `PLAN.md` for any remaining `[ ]` tasks and explicitly list them so the
+next iteration knows what work remains.
+
+'''

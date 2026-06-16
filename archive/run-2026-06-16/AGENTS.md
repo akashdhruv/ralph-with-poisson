@@ -1,0 +1,1 @@
+- IGNORE THESE FOLDERS AND FILES: archive/*, README.md, media/*, *.dev/

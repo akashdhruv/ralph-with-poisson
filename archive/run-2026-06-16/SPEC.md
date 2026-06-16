@@ -1,10 +1,3 @@
-[tools]
-bash=["python3.8"]
-
-[[chat.user]]
-content = '''
-Here is the technical specification for the Poisson solver project:
-
 # Poisson Solver — Technical Specification
 
 ## Problem
@@ -53,10 +46,10 @@ All solvers share this signature:
 
 ```python
 def solve(grid, maxiter=10000, tol=1e-6, verbose=False):
-   \"\"\"
+   """
    Solve ∇²φ = f in-place on grid.phi.
    Returns: (iterations, final_residual)
-   \"\"\"
+   """
 ```
 
 Update rule for interior points:
@@ -81,12 +74,3 @@ before each residual evaluation.
 **Manufactured solution**: choose φ_exact = sin(πx)sin(πy), which gives f = −2π²φ_exact.
 
 Check that each solver achieves L2 error < 1e-4 on a 32×32 grid.
-
-Study `PLAN.md` and the specification above, then pick the single most
-important thing to implement first and implement it. After implementing, check
-`PLAN.md` for any remaining `[ ]` tasks and explicitly list them so the
-next iteration knows what work remains.
-
-Read `AGENTS.md` for repo restrictions (only once).
-
-'''
