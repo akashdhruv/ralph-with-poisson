@@ -1,0 +1,6 @@
+run_id = "20260616-154736-5c9b82"
+workdir = "/home/akash/Desktop/Akash/Workbench/ralph-poisson"
+task_file = "/home/akash/Desktop/Akash/Workbench/ralph-poisson/Spec.toml"
+loop_index = 1
+phase = "execution"
+updated_at = "2026-06-16T20:47:36.299420+00:00"
