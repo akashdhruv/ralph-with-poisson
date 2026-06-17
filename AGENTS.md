@@ -1,1 +1,1 @@
-- IGNORE: archive/*, README.md, media/*
+- IGNORE: archive/, README.md, media/, benchmark/

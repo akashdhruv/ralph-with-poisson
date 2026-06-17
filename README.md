@@ -4,7 +4,7 @@ This repo is a controlled experiment in **how you structure the loop around an A
 
 This experiment is part of the authors' broader work on AI-driven scientific software engineering and automated code translation. Prior publications and associated datasets are linked from the [CodeScribe repo](https://github.com/Lab-Notebooks/CodeScribe).
 
-Six runs are archived under `archive/`. Each has a `report.md` summarising the setup, token usage, test results, and benchmark output.
+Eight runs are archived under `archive/`. Each has a `report.md` summarising the setup, token usage, test results, and benchmark output.
 
 ---
 
@@ -57,16 +57,18 @@ loop 2 [review]     ← ...
 
 Within each execution session the agent runs for up to N iterations (tool calls interleaved with model reasoning). When it hits the limit or declares itself done, CodeScribe runs the review agent, then starts a new execution session.
 
-Four runs with this pattern are archived, all using `claude-opus-4-6` with extended thinking (`--reason`):
+Six runs with this pattern are archived, all using `claude-opus-4-6` with extended thinking (`--reason`). The first four (June 9–10) predate prompt caching in CodeScribe; the two from June 16 are the first runs with caching enabled:
 
-| Run | Loops | Tests | Total tokens in | Wall time |
-|-----|-------|-------|-----------------|-----------|
-| `run-2026-06-09` | 4 | 5/5 | not recorded | 11m 52s |
-| `run-2026-06-10` | 5 | 6/6 | not recorded | 16m 45s |
-| `run-2026-06-10_2` | 5 | 12/12 | 974,751 | 16m 47s |
-| `run-2026-06-10_3` | 2 | 6/6 | 415,652 | 10m 29s |
+| Run | Loops | Tests | Billed tokens in | Cache reads | Wall time |
+|-----|-------|-------|------------------|-------------|-----------|
+| `run-2026-06-09` | 4 | 5/5 | not recorded | — | 11m 52s |
+| `run-2026-06-10` | 5 | 6/6 | not recorded | — | 16m 45s |
+| `run-2026-06-10_2` | 5 | 12/12 | 974,751 | — | 16m 47s |
+| `run-2026-06-10_3` | 2 | 6/6 | 415,652 | — | 10m 29s |
+| `run-2026-06-16` | 1 | 5/5 | 42,129 | 151,178 | 8m 20s |
+| `run-2026-06-16_2` | 1 | 4/4 | 36,756 | 140,173 | 4m 26s |
 
-All four runs completed all 8 tasks and passed their full test suites. Test coverage improved across runs (5 → 6 → 12 tests) as the agents wrote more thorough test suites. The fastest run (`run-2026-06-10_3`) finished in 2 loops — the model completed the entire implementation in one session and the second loop was the review pass.
+All six runs completed all 8 tasks and passed their full test suites. Among the first four, test coverage improved (5 → 6 → 12 tests) as the agents wrote more thorough suites, and the fastest (`run-2026-06-10_3`) finished in 2 loops. The two June 16 runs are the notable shift: with prompt caching now wired into CodeScribe (and the per-loop iteration cap raised from 12 to 30), each completed the entire implementation in a **single loop**, billing only ~37–42k input tokens against 140k–151k cache reads — an order-of-magnitude drop in billed input versus the pre-caching runs. `run-2026-06-16_2` at 4m 26s is the fastest run in the archive. See [What These Patterns Trade Off](#what-these-patterns-trade-off) for the full discussion.
 
 ---
 
@@ -117,16 +119,16 @@ The workflow used a loop-until-dry pattern: a check-plan agent scanned `PLAN.md`
 | **Context budget** | Low per session (grows across loops) | Large (1M window) | Moderate per agent |
 | **Parallelism** | None (sequential loops) | None (one agent) | Yes (concurrent agents) |
 | **Resumability** | Built-in (state in `.codescribe/`) | Manual | Via workflow run ID |
-| **Prompt caching** | Not implemented | Yes (Anthropic API, native) | Yes (Anthropic API, native) |
+| **Prompt caching** | Yes (as of 2026-06-16) | Yes (Anthropic API, native) | Yes (Anthropic API, native) |
 | **Overhead** | Medium (review agent between loops) | Low | Low |
 | **Multi-provider** | Yes (any API key / model) | Anthropic only | Anthropic only |
 | **Best for** | Long tasks, open-weight models, cost-sensitive runs | Single-shot tasks, large specs | Tasks with natural fan-out |
 
-The `/loop` and Workflow runs both completed faster and with more tests than the CodeScribe runs, largely because `claude-sonnet-4-6` with a 1M context window could load the entire workspace in one shot. The CodeScribe runs with `claude-opus-4-6` + reasoning produced good code but spent several loops on cleanup and threshold-tuning that a single-context run handles in one pass.
+The `/loop` and Workflow runs both completed faster and with more tests than the *early* CodeScribe runs, largely because `claude-sonnet-4-6` with a 1M context window could load the entire workspace in one shot. The June 9–10 CodeScribe runs with `claude-opus-4-6` + reasoning produced good code but spent several loops on cleanup and threshold-tuning that a single-context run handles in one pass. That gap narrowed sharply with the caching-enabled June 16 CodeScribe runs, which each finished in a single loop — `run-2026-06-16_2` (4m 26s) is now competitive with the 1M-context Claude Code runs (5m 51s and 5m 42s).
 
-Token usage reflects a different trade-off. The Claude Code experiments expose a split between actual input tokens and cache reads — a feature of the Anthropic model API's prompt caching support, which Claude Code uses natively. The `/loop` run billed only 1,100 actual input tokens against 1.1M cache reads; the Workflow run billed 2,600 against 932k. The CodeScribe runs show no cache reads (415k–974k tokens billed at standard rates) because the current API integration does not yet implement caching. That said, CodeScribe's fresh-session model keeps each individual session's active context small — it loads only what's needed for the current task rather than holding the entire workspace in a 1M window — which limits per-session cost and makes it practical with smaller or cheaper models. Work is underway to add prompt caching to CodeScribe's API calls and to reduce loop count by consolidating tasks that the agent currently spreads across multiple sessions.
+Token usage reflects a different trade-off, and it is where the June 16 runs change the picture. The Claude Code experiments expose a split between actual input tokens and cache reads — a feature of the Anthropic model API's prompt caching support, which Claude Code uses natively. The `/loop` run billed only 1,100 actual input tokens against 1.1M cache reads; the Workflow run billed 2,600 against 932k. The first four CodeScribe runs showed no cache reads (415k–974k tokens billed at standard rates) because the API integration did not yet implement caching. As of the two June 16 runs that has changed: CodeScribe now caches its prompts, and the effect is dramatic — `run-2026-06-16` billed 42k input tokens against 151k cache reads, and `run-2026-06-16_2` billed 37k against 140k, an order-of-magnitude drop in billed input versus the pre-caching runs. Both finished all 8 tasks in a single loop, and `run-2026-06-16_2` (4m 26s) is the fastest run in the archive — now competitive with the 1M-context Claude Code runs. Independently of caching, CodeScribe's fresh-session model keeps each individual session's active context small — it loads only what's needed for the current task rather than holding the entire workspace in a 1M window — which limits per-session cost and makes it practical with smaller or cheaper models. With caching now landed and the per-loop iteration cap raised from 12 to 30, the loop-count reduction that earlier runs needed several sessions for has largely collapsed to a single loop.
 
-From a scientific software perspective, the more notable result is that all six runs produced *correct* solvers with verified L2 errors below the spec threshold. The variation across runs was in polish, test coverage, and wall time — not in numerical correctness. That's a meaningful signal: the hard part of AI-driven scientific software is no longer getting the math right, it's structuring the agent's workflow so it doesn't waste loops second-guessing itself.
+From a scientific software perspective, the more notable result is that all eight runs produced *correct* solvers with verified L2 errors below the spec threshold. The variation across runs was in polish, test coverage, and wall time — not in numerical correctness. That's a meaningful signal: the hard part of AI-driven scientific software is no longer getting the math right, it's structuring the agent's workflow so it doesn't waste loops second-guessing itself.
 
 The shell output logs (`archive/run-2026-06-10_3/shell_output.md`) and terminal screenshots (`media/shell-v*.png`) give qualitative insight into why the Opus 4.6 runs needed more loops. Two patterns stand out.
 
@@ -149,7 +151,7 @@ Second, the model repeatedly re-validated the spelling of `AssertionError` acros
 
 **Agent instructions**
 
-- `AGENTS.md` — one line: `IGNORE: archive/*, README.md, media/*`. This tells every agent to treat the archived runs, this file, and the screenshots as read-only. Agents that respect `AGENTS.md` will never overwrite past results or touch documentation.
+- `AGENTS.md` — one line: `IGNORE: archive/*, README.md, media/*, benchmark/`. This tells every agent to treat the archived runs, this file, the screenshots, and the `benchmark/` tooling directory as read-only. Agents that respect `AGENTS.md` will never overwrite past results or touch documentation.
 
 **Output**
 
@@ -163,6 +165,8 @@ Second, the model repeatedly re-validated the spelling of `AssertionError` acros
 - `archive/run-2026-06-10_3/` — CodeScribe, Opus 4.6, 2 loops (fastest), 6/6 tests, 415k tokens in, 10m 29s
 - `archive/run-2026-06-10-claude-loop/` — Claude Code `/loop`, Sonnet 4.6 1M, 1 iteration, 9/9 tests, $0.63, 5m 51s
 - `archive/run-2026-06-10-claude-workflow/` — Claude Code Workflow, Sonnet 4.6 1M, 3 agents, 20/20 tests, 5m 42s
+- `archive/run-2026-06-16/` — CodeScribe (caching enabled), Opus 4.6, 1 loop, 5/5 tests, 42k billed / 151k cache reads, 8m 20s
+- `archive/run-2026-06-16_2/` — CodeScribe (caching enabled), Opus 4.6, 1 loop (fastest), 4/4 tests, 37k billed / 140k cache reads, 4m 26s
 
 Each `archive/run-*/` directory contains:
 - `report.md` — experiment report (setup, tokens, test output, benchmark, notes)
@@ -172,9 +176,9 @@ Each `archive/run-*/` directory contains:
 
 **Media**
 
-- `media/shell-v1.png` … `shell-v6.png` — terminal screenshots, one per run, showing live agent output.
+- `media/shell-v1.png` … `shell-v6.png` — terminal screenshots showing live agent output, one for each of the first six runs (the two 2026-06-16 caching runs have no screenshot).
 
-Note that `AGENTS.md` explicitly instructs agents to ignore `archive/*`, `media/*`, and `README.md` — so archived `generated-src/` trees are preserved as read-only artefacts and won't be touched if you run a new experiment from this repo.
+Note that `AGENTS.md` explicitly instructs agents to ignore `archive/*`, `media/*`, `README.md`, and `benchmark/` — so archived `generated-src/` trees are preserved as read-only artefacts and won't be touched if you run a new experiment from this repo.
 
 ---
 
